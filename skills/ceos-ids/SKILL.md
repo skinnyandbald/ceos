@@ -1,6 +1,8 @@
 ---
 name: ceos-ids
 description: Use when identifying, discussing, or solving issues using the EOS IDS process
+file-access: [data/issues/, templates/issue.md]
+tools-used: [Read, Write, Glob]
 ---
 
 # ceos-ids
@@ -42,7 +44,7 @@ Each issue is a markdown file with YAML frontmatter:
 ```yaml
 id: issue-001
 title: "Slow customer onboarding"
-priority: 1            # 1 (highest) - 3 (lowest)
+priority: 1            # 1 (highest) - 5 (lowest)
 category: process      # people | process | data | vision | traction
 ids_stage: identified  # identified | discussed | solved
 created: "2026-02-06"
@@ -50,8 +52,10 @@ created: "2026-02-06"
 
 **Priority levels:**
 - `1` — Critical, solve first
-- `2` — Important, solve soon
-- `3` — Minor, solve when time allows
+- `2` — High, solve soon
+- `3` — Medium, solve when time allows
+- `4` — Low, solve if capacity allows
+- `5` — Nice-to-have, backlog
 
 **Categories (the 5 EOS issue types):**
 - `people` — right person, right seat issues
@@ -78,13 +82,14 @@ When the user asks to see the issues list.
 3. Display sorted by priority (1 first):
 
 ```
-Open Issues (5 total):
+Open Issues (6 total):
 ━━━━━━━━━━━━━━━━━━━━
 P1  issue-003  Slow customer onboarding     [process]  identified
 P1  issue-007  Key account churning          [people]   discussed
 P2  issue-001  Reporting gaps in dashboard   [data]     identified
-P2  issue-005  Misaligned marketing spend    [vision]   identified
-P3  issue-002  Office Wi-Fi unreliable       [process]  identified
+P3  issue-005  Misaligned marketing spend    [vision]   identified
+P4  issue-002  Office Wi-Fi unreliable       [process]  identified
+P5  issue-008  Update team photo on website  [process]  identified
 ```
 
 If no open issues exist: "No open issues. Nice work! Use 'ceos-ids' to create one when a new issue surfaces."
@@ -113,7 +118,7 @@ Record both the stated problem and the root cause.
 
 #### Step 3: Classify
 
-1. **Priority** — How urgent? (1/2/3)
+1. **Priority** — How urgent? (1/2/3/4/5)
 2. **Category** — Which EOS type? (people/process/data/vision/traction)
 
 If the user isn't sure about category, help with examples:
@@ -233,3 +238,25 @@ This is the same as the three modes above, just run sequentially on a single iss
 - **ID uniqueness.** Check both `open/` and `solved/` directories when generating a new ID to avoid collisions.
 - **File lifecycle.** Issues start in `data/issues/open/`, move to `data/issues/solved/` when the IDS process is complete. Don't delete issue files — solved issues are the audit trail.
 - **Integrate with L10.** During L10 meetings, IDS is Section 6. The `ceos-l10` skill will surface the issues list — this skill handles the actual IDS work on individual issues.
+- **Don't auto-invoke other skills.** Mention `ceos-l10`, `ceos-todos`, and `ceos-vto` when relevant, but let the user decide when to switch workflows.
+- **Sensitive data warning.** On first use, remind the user: "Issues may contain sensitive business problems and personnel matters. Use a private repo."
+
+## Integration Notes
+
+### L10 Meetings (ceos-l10)
+
+- **Read:** `ceos-l10` reads open issues from `data/issues/open/` during Section 6 (IDS) of the L10 meeting. The L10 skill surfaces the prioritized list; `ceos-ids` handles the actual Identify, Discuss, Solve work on individual issues.
+- **Suggested flow:** New issues surfaced during L10 should be created via `ceos-ids` Create mode.
+
+### To-Dos (ceos-todos)
+
+- **Related:** When an issue is solved, the Solve step creates To-Dos with owners and due dates. These should be tracked in `data/todos/` via `ceos-todos` Create mode with `source: ids`.
+- **Suggested flow:** After solving an issue, suggest: "Create To-Dos for these action items with `ceos-todos`."
+
+### V/TO (ceos-vto)
+
+- **Read:** Issues categorized as `vision` relate to V/TO alignment. When such issues are identified, reference `data/vision.md` for context on the company's Core Focus and strategic direction.
+
+### Read-Only Principle
+
+Other skills read `data/issues/` for reference. **Only `ceos-ids` writes to issue files.** This preserves a single source of truth for issue tracking and resolution.

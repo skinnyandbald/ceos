@@ -1,6 +1,6 @@
 # Skill Reference
 
-Complete reference for all 5 CEOS skills. Each skill is a Claude Code skill that implements a core EOS tool.
+Complete reference for all CEOS skills. Each skill is a Claude Code skill that implements a core EOS tool.
 
 ## How Skills Work
 
@@ -94,8 +94,9 @@ Manage quarterly Rocks — the 3-7 most important priorities for the next 90 day
 Walk through creating each Rock:
 1. Reviews the 1-Year Plan for context
 2. Collects title, owner, measurable outcome, milestones
-3. Validates: 3-7 per person, aligned with 1-Year Plan
-4. Writes Rock files to `data/rocks/YYYY-QN/`
+3. Optionally collects structured milestones with due dates and attachment references
+4. Validates: 3-7 per person, aligned with 1-Year Plan
+5. Writes Rock files to `data/rocks/YYYY-QN/`
 
 #### Tracking Rocks (Weekly)
 
@@ -120,9 +121,12 @@ Claude reads data/rocks/2026-Q1/ and shows:
 
   Rock Status — Q1 2026
   ━━━━━━━━━━━━━━━━━━━━━
-  rock-001  Launch Beta Program     brad     on_track   2/3 milestones
-  rock-002  Hire VP Sales           daniel   off_track  No candidates yet
-  rock-003  Implement CRM           daniel   on_track   1/2 milestones
+  rock-001  Launch Beta Program     brad     on_track   2/3 milestones complete
+  rock-002  Hire VP Sales           daniel   off_track  0/4 milestones (1 overdue)
+  rock-003  Implement CRM           daniel   on_track   1/2 milestones complete
+
+  Attachments:
+    • Beta spec (data/rocks/2026-Q1/rock-001-beta-spec.pdf)
 
   Any status changes to record?
 ```
@@ -311,20 +315,21 @@ Run the IDS (Identify, Discuss, Solve) process — the EOS method for resolving 
 Display all open issues sorted by priority:
 
 ```
-Open Issues (5 total):
+Open Issues (6 total):
 ━━━━━━━━━━━━━━━━━━━━
 P1  issue-003  Slow customer onboarding     [process]  identified
 P1  issue-007  Key account churning          [people]   discussed
 P2  issue-001  Reporting gaps in dashboard   [data]     identified
-P2  issue-005  Misaligned marketing spend    [vision]   identified
-P3  issue-002  Office Wi-Fi unreliable       [process]  identified
+P3  issue-005  Misaligned marketing spend    [vision]   identified
+P4  issue-002  Office Wi-Fi unreliable       [process]  identified
+P5  issue-008  Update team photo on website  [process]  identified
 ```
 
 #### Create Issue (Identify)
 
 1. Name the issue
 2. Dig for root cause using the 5 Whys technique
-3. Classify: priority (1-3) and category
+3. Classify: priority (1-5) and category
 4. Generate unique ID
 5. Write to `data/issues/open/`
 
@@ -341,8 +346,10 @@ Create at least one To-Do with an owner and due date. Move the issue to `data/is
 | Priority | Meaning |
 |----------|---------|
 | 1 | Critical — solve first |
-| 2 | Important — solve soon |
-| 3 | Minor — solve when time allows |
+| 2 | High — solve soon |
+| 3 | Medium — solve when time allows |
+| 4 | Low — solve if capacity allows |
+| 5 | Nice-to-have — backlog |
 
 ### Issue Categories (The 5 EOS Issue Types)
 
@@ -406,9 +413,864 @@ Claude walks through IDS:
 
 ---
 
+## ceos-todos — To-Do Tracking
+
+Track To-Dos — the concrete actions that bridge meetings and execution. Every To-Do has one owner, a due date, and a source. EOS teams target 90%+ weekly completion rate.
+
+### When to Use
+
+- "Show my to-dos" or "what's on my list?"
+- "Create a to-do" or "add a to-do for [person]"
+- "Mark to-do done" or "complete [to-do]"
+- "To-do review" or "how's our completion rate?"
+- "What to-dos are overdue?"
+
+### Four Modes
+
+| Mode | What Happens |
+|------|-------------|
+| **List** | Shows all open To-Dos grouped by owner with due dates and overdue indicators |
+| **Create** | Adds a To-Do with title, owner, due date, and source |
+| **Complete** | Marks To-Do(s) as done, records completion date |
+| **Review** | Weekly completion rate report with patterns and flags |
+
+### To-Do Status Values
+
+| Status | Meaning |
+|--------|---------|
+| `open` | Not yet done |
+| `complete` | Done — binary, no partial credit |
+
+Overdue is computed (not stored): `status: open` + `due` before today.
+
+### Source Values
+
+| Source | Meaning |
+|--------|---------|
+| `l10` | Created during L10 meeting |
+| `ids` | Created during IDS resolution |
+| `quarterly` | Created during Quarterly Conversation |
+| `adhoc` | Created outside meetings |
+
+### Example
+
+```
+You: "Show my to-dos"
+
+Claude reads data/todos/ and shows:
+
+  Open To-Dos (5 total, 1 overdue)
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Brad (3 to-dos):
+    todo-003  Send revised proposal      due: Feb 20    3 days left
+    todo-007  Review hiring pipeline     due: Feb 18    1 day left
+    todo-001  Update onboarding doc      due: Feb 10    ⚠️ 4 days overdue
+
+  Daniel (2 to-dos):
+    todo-005  Fix dashboard report       due: Feb 22    8 days left
+    todo-004  Schedule vendor call       due: Feb 15    due today
+
+  Summary: 5 open | 1 overdue | 2 owners
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `data/todos/` | To-Do files (one file per To-Do) |
+| `templates/todo.md` | Template for new To-Do files |
+
+---
+
+## ceos-accountability — Accountability Chart
+
+Manage the Accountability Chart — the organizational structure that defines seats, owners, and roles. View the current chart, update seats (add, modify, remove), and audit for structural issues.
+
+### When to Use
+
+- "Show the accountability chart" or "who owns what?"
+- "Add a new seat" or "we need a VP of Product"
+- "Audit the org chart" or "check for empty seats"
+- "Update roles for [seat]" or "change seat ownership"
+- "How many seats does [person] own?"
+
+### Three Modes
+
+| Mode | What Happens |
+|------|-------------|
+| **View** | Displays the chart with seats, owners, role counts, and summary stats |
+| **Update** | Add, modify, or remove seats. Shows diff before every write |
+| **Audit** | Structural checks (5 roles per seat, placeholders, staleness), cross-reference with `data/people/`, multi-seat and empty seat detection |
+
+### Seat Structure
+
+Every seat has:
+- **One owner** (a person's name, or `[Name]` if unfilled)
+- **Five roles** (the key responsibilities for that seat, per EOS methodology)
+- **Position** in the hierarchy (implicit from order in the file)
+
+### Audit Flags
+
+| Flag | Meaning |
+|------|---------|
+| `✅` | Seat fully defined — owner and 5 roles |
+| `⚠️` | Warning — missing person file, name mismatch, or multi-seat owner |
+| `🔴` | Error — empty seat, missing roles, or placeholder text |
+
+### Example
+
+```
+You: "Audit the accountability chart"
+
+Claude reads data/accountability.md + data/people/ and shows:
+
+  Accountability Chart Audit
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  | Seat        | Owner       | Roles | Status |
+  |-------------|-------------|-------|--------|
+  | Visionary   | Brad Feld   | 5/5   | ✅     |
+  | Integrator  | Sarah Chen  | 5/5   | ✅     |
+  | VP Sales    | Mike Torres | 5/5   | ✅     |
+  | Operations  | (empty)     | 3/5   | 🔴     |
+
+  ⚠️  Operations seat is empty — hiring gap
+  ⚠️  Mike Torres has no person file — create one?
+
+  Overall: 3/4 seats defined | 1 empty seat
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `data/accountability.md` | The Accountability Chart (source of truth) |
+| `templates/accountability.md` | Template for new charts |
+| `data/people/` | Person files (cross-reference for Audit) |
+
+---
+
+## ceos-people — People Analyzer
+
+Evaluate whether team members are the right people (Core Values alignment) in the right seats (GWC: Get it, Want it, Capacity). Manage people evaluations, run quarterly reviews, and flag below-the-bar situations for action.
+
+### When to Use
+
+- "Evaluate [person]" or "run the people analyzer"
+- "Are we right people, right seats?"
+- "Quarterly people review" or "review the team"
+- "Who's below the bar?"
+- "GWC check on [person]"
+
+### Three Modes
+
+| Mode | What Happens |
+|------|-------------|
+| **Evaluate** | Rate a person against Core Values (+, +/-, -) and GWC (Get/Want/Capacity). Three strikes rule flags Core Values misalignment. Suggests status: right_person_right_seat, below_bar, wrong_seat, or evaluating |
+| **Review** | Summary table of all people evaluations with status flags, bar percentage (target: 80%+), and stale-evaluation detection |
+| **Quarterly** | Walks through every seat on the Accountability Chart, offers re-evaluate or update notes, tracks progress, and flags empty seats for hiring |
+
+### Core Values Rating
+
+| Rating | Meaning |
+|--------|---------|
+| `+` | Lives this value most of the time |
+| `+/-` | Sometimes demonstrates, sometimes doesn't |
+| `-` | Rarely or never demonstrates |
+
+Three or more `+/-` or `-` ratings = "wrong person" (Core Values misalignment).
+
+### GWC Dimensions
+
+| Dimension | Question |
+|-----------|----------|
+| **Get it** | Do they truly understand the role? |
+| **Want it** | Do they genuinely want the work? |
+| **Capacity** | Can they do it? |
+
+All three must be **true** for "right seat."
+
+### Example
+
+```
+You: "Evaluate Brad"
+
+Claude reads data/vision.md for Core Values and data/accountability.md for seat:
+
+  Core Values Evaluation — Brad Feld
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | Core Value   | Rating | Notes        |
+  |--------------|--------|--------------|
+  | Integrity    | +      | Consistently |
+  | Innovation   | +      |              |
+  | Transparency | +      |              |
+
+  GWC — Brad Feld as Visionary:
+    Get it:     ✓ Yes
+    Want it:    ✓ Yes
+    Capacity:   ✓ Yes
+
+  Suggested status: right_person_right_seat
+  Save this evaluation?
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `data/people/` | Person evaluation files (one per person) |
+| `data/vision.md` | Core Values source (read-only) |
+| `data/accountability.md` | Seat assignments (read-only) |
+| `templates/people-analyzer.md` | Template for new evaluations |
+
+---
+
+## ceos-process — Core Processes
+
+Document, simplify, and audit core company processes — the 6th EOS component. Every company has a handful of core processes that must be documented as checklists, simplified to their essential steps, and followed by all (FBA).
+
+### When to Use
+
+- "Document our sales process" or "create a new process"
+- "Show our processes" or "what processes do we have?"
+- "Audit process FBA scores" or "how well are we following our processes?"
+- "Simplify the hiring process" or "reduce this process to essentials"
+
+### Three Modes
+
+| Mode | What Happens |
+|------|-------------|
+| **Document** | Create or update a core process. Collects title, owner, purpose, and numbered steps (action verbs). Validates: 3-7 core processes, one owner, 5-20 steps. Assigns unique ID |
+| **Audit** | FBA (Followed-By-All) score review across all processes. Flags scores below 80%, audits overdue by 90+ days, and processes still in draft |
+| **Simplify** | Apply the 20/80 rule — reduce a process to its essential steps. Shows before/after diff with reduction ratio |
+
+### FBA Scoring
+
+| Score Range | Meaning |
+|-------------|---------|
+| 80-100% | Strong — process is well followed |
+| 50-79% | Needs attention — discuss at L10 |
+| Below 50% | Weak — IDS priority |
+
+### Example
+
+```
+You: "Audit our process FBA scores"
+
+Claude reads data/processes/ and shows:
+
+  Process FBA Audit
+  ━━━━━━━━━━━━━━━━━
+  | Process              | Owner  | Status | FBA  | Last Audited |
+  |----------------------|--------|--------|------|-------------|
+  | Customer Onboarding  | brad   | active | 85%  | 2026-01-15  |
+  | Sales Process        | daniel | active | 70%  | 2025-12-01  |
+  | Deployment Pipeline  | brad   | active | 95%  | 2026-02-01  |
+
+  ⚠️ Sales Process (70%) is below the 80% target
+  Want to update any FBA scores?
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `data/processes/` | Process documentation files |
+| `data/vision.md` | Core Focus reference for alignment |
+| `templates/process.md` | Template for new process files |
+
+---
+
+## ceos-quarterly — Quarterly Conversations
+
+Facilitate the EOS Quarterly Conversation — the formal quarterly check-in between each manager and their direct reports. This is a two-way conversation about alignment, role satisfaction, and obstacles — not a performance review.
+
+**Not to be confused with** `ceos-quarterly-planning`, which is the team planning session. `ceos-quarterly` is the 1-on-1 conversation.
+
+### When to Use
+
+- "Run quarterly conversation for [person]"
+- "Schedule quarterly conversations" or "who needs a quarterly?"
+- "Review conversation history for [person]"
+- "Quarterly one-on-one" or "manager check-in"
+
+### The 5-Point Agenda
+
+| # | Section | Focus |
+|---|---------|-------|
+| 1 | Core Values Alignment | How are they living the Core Values? |
+| 2 | GWC | Do they still Get it, Want it, have Capacity? |
+| 3 | Rocks Review | How did their Rocks go this quarter? |
+| 4 | Role Expectations | Are roles clear and being met? |
+| 5 | Feedback Both Ways | What's working? What's not? |
+
+### Three Modes
+
+| Mode | What Happens |
+|------|-------------|
+| **Facilitate** | Walk through the 5-point agenda for a specific person. Pulls Core Values from vision.md, seat from accountability.md, Rocks from rocks/, and People Analyzer from people/. Records the full conversation |
+| **Schedule** | Maps every seat on the Accountability Chart to show which conversations are done and which are pending. Shows progress percentage |
+| **Review** | View conversation history for a person (across quarters) or the full team (one quarter). Shows CV ratings, GWC status, and Rock completion trends |
+
+### Example
+
+```
+You: "Schedule quarterly conversations"
+
+Claude reads data/accountability.md and data/conversations/2026-Q1/:
+
+  Quarterly Conversations — 2026-Q1
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | Manager | Direct Report | Seat       | Status  |
+  |---------|---------------|------------|---------|
+  | Brad    | Sarah Chen    | Integrator | ✓ Done  |
+  | Brad    | Mike Torres   | VP Sales   | Pending |
+  | Brad    | Alex Kim      | VP Eng     | Pending |
+
+  Progress: 1/3 conversations complete (33%)
+  Would you like to start a conversation?
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `data/conversations/YYYY-QN/` | Conversation files by quarter |
+| `data/vision.md` | Core Values source (read-only) |
+| `data/accountability.md` | Seats and reporting structure (read-only) |
+| `data/rocks/YYYY-QN/` | Rock files for the quarter (read-only) |
+| `data/people/` | People Analyzer evaluations (read-only) |
+| `templates/quarterly-conversation.md` | Template for new conversations |
+
+---
+
+## ceos-annual — Annual Planning
+
+Facilitate the EOS Annual Planning session — the comprehensive year-end process where the leadership team refreshes the V/TO, reviews the outgoing year, and sets the plan for the next year. This is the most comprehensive EOS meeting.
+
+### When to Use
+
+- "Run annual planning" or "annual planning session"
+- "Plan next year" or "year in review"
+- "Refresh our vision" or "update the V/TO for the year"
+- "Annual offsite" or "strategic planning session"
+
+### The 7-Section Agenda
+
+| # | Section | Focus |
+|---|---------|-------|
+| 1 | Year in Review | Score Q4 Rocks, review annual Scorecard trends, celebrate wins |
+| 2 | V/TO Refresh | Update 3-Year Picture, set new 1-Year Plan |
+| 3 | Issues Sweep | Clear the long-term issues list via IDS |
+| 4 | Organizational Checkup | Review Accountability Chart, run People Analyzer |
+| 5 | Set Q1 Rocks | First quarter's Rocks aligned to the new 1-Year Plan |
+| 6 | Set Scorecard | Review and update weekly measurables |
+| 7 | Conclude | Key decisions, cascading messages, next steps |
+
+### Three Modes
+
+| Mode | What Happens |
+|------|-------------|
+| **Plan** | Full annual planning session with the 7-section agenda. Reads data from all skills (rocks, scorecard, issues, people, vision). Writes decisions to `data/annual/YYYY-planning.md` |
+| **Review Year** | Lighter year-in-review without running the full session. Shows Rock completion by quarter and by person, Scorecard trends, and issues resolved |
+| **Refresh V/TO** | Walk through V/TO sections for annual updates. Shows current content with proposed changes and diffs for each section |
+
+### Example
+
+```
+You: "Run annual planning"
+
+Claude reads data from all CEOS sources and shows:
+
+  Annual Planning — 2027
+  ━━━━━━━━━━━━━━━━━━━━━━
+  Date: 2026-12-15
+  Attendees: Brad, Daniel, Sarah
+
+  Data loaded:
+    V/TO: Last updated 2026-06-01
+    Rocks: 22 across 4 quarters
+    Scorecard: 48 weeks of data
+    Open issues: 8
+    People evaluations: 5
+
+  Let's walk through the 7-section agenda.
+
+  § 1. Year in Review
+  | Quarter | Total | Complete | Rate |
+  |---------|-------|----------|------|
+  | Q1      | 5     | 4        | 80%  |
+  | Q2      | 6     | 5        | 83%  |
+  | Q3      | 5     | 3        | 60%  |
+  | Q4      | 6     | 5        | 83%  |
+  | Year    | 22    | 17       | 77%  |
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `data/annual/` | Annual planning session files |
+| `data/vision.md` | V/TO document (read + update during refresh) |
+| `data/rocks/` | Rock files for all quarters (read-only) |
+| `data/scorecard/` | Scorecard data for trend analysis (read-only) |
+| `data/issues/` | Open and solved issues (read-only) |
+| `data/accountability.md` | Accountability Chart (read-only) |
+| `data/people/` | People evaluations (read-only) |
+| `templates/annual-planning.md` | Template for new planning files |
+
+---
+
+## ceos-quarterly-planning — Quarterly Planning Session
+
+Facilitate the EOS Quarterly Planning Session — the structured half-day meeting where the leadership team scores outgoing Rocks, reviews Scorecard trends, confirms vision alignment, tackles issues, and sets the next quarter's Rocks.
+
+**Not to be confused with** `ceos-quarterly`, which handles 1-on-1 quarterly conversations. `ceos-quarterly-planning` is the team planning session.
+
+### When to Use
+
+- "Run quarterly planning" or "quarterly planning session"
+- "Plan next quarter" or "score rocks and plan next quarter"
+- "End of quarter review and planning"
+- "Quarterly pulse" or "review the quarter"
+
+### The 6-Section Agenda
+
+| # | Section | Time | Focus |
+|---|---------|------|-------|
+| 1 | Score Outgoing Rocks | 30 min | Score Rocks, celebrate wins |
+| 2 | Scorecard Review | 20 min | 13-week trends, identify patterns |
+| 3 | V/TO Check | 20 min | Confirm 1-Year Plan alignment |
+| 4 | IDS | 60 min | Tackle long-term issues |
+| 5 | Set Next Quarter Rocks | 45 min | New Rocks aligned to 1-Year Plan |
+| 6 | Conclude | 15 min | Key decisions, action items |
+
+### Two Modes
+
+| Mode | What Happens |
+|------|-------------|
+| **Plan** | Full quarterly planning session with the 6-section agenda. Scores outgoing Rocks, reviews 13-week Scorecard trends, confirms V/TO alignment, runs IDS on open issues, and sets next quarter's Rocks |
+| **Review Quarter** | Lighter quarterly review without the full session. Shows Rock completion (overall and per person), Scorecard trends, and issues summary |
+
+### Example
+
+```
+You: "Run quarterly planning"
+
+Claude reads rocks, scorecard, vision, and issues data:
+
+  Quarterly Planning — Q1 → Q2
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Date: 2026-03-28
+  Attendees: Brad, Daniel, Sarah
+
+  § 1. Score Outgoing Rocks — Q1
+  | Rock              | Owner  | Status      |
+  |-------------------|--------|-------------|
+  | Launch Beta       | Brad   | complete ✓  |
+  | Partner Outreach  | Daniel | on_track → ?|
+  | Redesign Onboard  | Sarah  | dropped ✗   |
+
+  Completion: 1/3 (33%) — Below 80% target ⚠️
+  Finalize Partner Outreach: Complete or dropped?
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `data/quarterly/` | Quarterly planning session files |
+| `data/rocks/YYYY-QN/` | Rock files for scoring and reference (read-only) |
+| `data/scorecard/` | Scorecard data for trend analysis (read-only) |
+| `data/vision.md` | 1-Year Plan for Rock alignment (read-only) |
+| `data/issues/` | Open and solved issues (read-only) |
+| `templates/quarterly-planning.md` | Template for planning files |
+
+---
+
+## ceos-checkup — Organizational Checkup
+
+Measure organizational health using the EOS Organizational Checkup — a 20-question assessment across the Six Key Components (Vision, People, Data, Issues, Process, Traction). Each leadership team member rates 1-5 on each question.
+
+### When to Use
+
+- "Run the organizational checkup" or "let's do the EOS checkup"
+- "How healthy is the organization?" or "team health assessment"
+- "Score the six key components"
+- "Show checkup history" or "compare team ratings"
+- "Are we improving on Vision/People/Data?"
+
+### The 20 Questions
+
+The checkup covers 20 canonical questions grouped by component:
+
+| Component | Questions | Count |
+|-----------|-----------|-------|
+| Vision | Clear vision, Core Values, Core Focus, 10-Year Target, target market, 3 Uniques | 6 |
+| People | Proven process, right people, Accountability Chart, right seats | 4 |
+| Issues | Leadership trust, issue resolution | 2 |
+| Traction | Rocks, Meeting Pulse, meeting discipline | 3 |
+| Process | Core Processes documented | 1 |
+| Data | Feedback systems, Scorecard, individual numbers, budget | 4 |
+
+### Three Modes
+
+| Mode | What Happens |
+|------|-------------|
+| **Run** | Conduct a new checkup. Collects 1-5 ratings from each participant for all 20 questions. Calculates per-component and overall scores. Flags components below 3.0 for IDS attention |
+| **Review** | Historical checkup results with trend analysis. Shows score progression across checkups with direction arrows (↑↑, ↑, →, ↓, ↓↓). Flags stale checkups (> 120 days) |
+| **Compare** | Alignment analysis between team members' ratings. Surfaces high-variance questions (range >= 3) as discussion topics. Helps teams discover where they see the organization differently |
+
+### Score Interpretation
+
+| Score | Rating | Action |
+|-------|--------|--------|
+| 4.0-5.0 | Strong | Maintain — this component is working |
+| 3.0-3.9 | Needs attention | Discuss at L10 — identify specific gaps |
+| < 3.0 | Weak | IDS priority — create issues for action plans |
+
+### Example
+
+```
+You: "Show checkup history"
+
+Claude reads data/checkups/ and shows:
+
+  Organizational Checkup History
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | Date       | Overall | Vision | People | Data | Issues | Process | Traction |
+  |------------|---------|--------|--------|------|--------|---------|----------|
+  | 2026-02-15 | 4.2     | 4.3    | 4.1    | 4.0  | 4.5    | 3.5     | 4.3      |
+  | 2025-11-10 | 3.8     | 4.0    | 3.5    | 3.2  | 4.0    | 3.0     | 3.8      |
+
+  Trend: Overall improving (+0.4). Process still weakest (3.5).
+  Want to drill into a specific checkup or component?
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `data/checkups/` | Checkup result files (one per session) |
+| `data/vision.md` | V/TO for Vision context (read-only) |
+| `data/accountability.md` | Team structure for participant suggestions (read-only) |
+| `data/rocks/` | Current Rocks for Traction context (read-only) |
+| `data/scorecard/` | Scorecard for Data context (read-only) |
+| `data/people/` | People evaluations for People context (read-only) |
+| `data/issues/` | Issues for Issues context (read-only) |
+| `templates/checkup.md` | Template for new checkup files |
+
+---
+
+## ceos-delegate — Delegate and Elevate
+
+Categorize a leader's tasks into the Delegate and Elevate 4-quadrant matrix based on enjoyment and competency. Identify what to keep, what to delegate, and create action plans for handing off work.
+
+### When to Use
+
+- "Run delegate and elevate for [person]" or "delegation audit"
+- "What should I be delegating?" or "am I doing the right work?"
+- "Review delegation progress" or "create a delegation plan"
+- "What's in my bottom quadrants?"
+
+### The Four Quadrants
+
+| Quadrant | Enjoyment | Competency | Action |
+|----------|-----------|------------|--------|
+| **Love It / Great At It** | High | High | Keep — this is your highest and best use |
+| **Like It / Good At It** | Medium | High | Delegate when possible |
+| **Don't Like It / Good At It** | Low | High | Delegate soon — energy drain |
+| **Don't Like It / Not Good At It** | Low | Low | Delegate immediately — bottleneck risk |
+
+Goal: spend 80%+ of time in Quadrant 1.
+
+### Three Modes
+
+| Mode | What Happens |
+|------|-------------|
+| **Audit** | Build the complete task list (starting from Accountability Chart responsibilities). Categorize each task into quadrants via enjoyment + competency questions. Show distribution and flag delegation priorities |
+| **Review** | Summary table of all team members with quadrant counts, delegation progress percentage, and stale-audit detection. Shows trends if multiple audits exist |
+| **Plan** | Create concrete delegation plans for Q3/Q4 tasks. Suggests delegates from the Accountability Chart, collects training needs and timelines |
+
+### Example
+
+```
+You: "Run delegate and elevate for Brad"
+
+Claude reads data/accountability.md for seat responsibilities, then walks through:
+
+  Delegate and Elevate — Brad Feld
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Quadrant Distribution:
+  | Quadrant                        | Count | %   | Action                |
+  |---------------------------------|-------|-----|-----------------------|
+  | Love It / Great At It           | 5     | 36% | Keep                  |
+  | Like It / Good At It            | 3     | 21% | Delegate when possible|
+  | Don't Like It / Good At It      | 4     | 29% | Delegate soon         |
+  | Don't Like It / Not Good At It  | 2     | 14% | Delegate immediately  |
+
+  Q1 focus: 36% — Target: 80%+
+  Tasks to delegate: 6 (43% of total)
+
+  🔴 Delegate Immediately:
+    1. Weekly expense reports — Not good at it, doesn't enjoy it
+    2. Vendor negotiations — Energy drain and quality risk
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `data/delegate/` | Delegate and Elevate audit files (one per person) |
+| `data/accountability.md` | Seat responsibilities for starter list (read-only) |
+| `data/people/` | People evaluations for context (read-only) |
+| `templates/delegate.md` | Template for new delegation audits |
+
+---
+
+## ceos-clarity
+
+**Clarity Break — structured leadership reflection**
+
+One of the Five Leadership Abilities in EOS. A Clarity Break is scheduled time to step away from day-to-day work and think strategically: "work ON the business, not IN it." Unlike structured EOS tools, the Clarity Break is intentionally unstructured — this skill provides just enough framework to make it habitual without over-formalizing it.
+
+### Modes
+
+| Mode | What It Does |
+|------|-------------|
+| **Start** | Guide a live Clarity Break — gather business context, prompt reflection, capture insights |
+| **Log** | Record a Clarity Break that already happened (retroactive logging) |
+| **History** | Review past Clarity Break notes and identify recurring themes |
+
+### Example
+
+**Start mode:**
+
+```
+State of the Business
+━━━━━━━━━━━━━━━━━━━━━
+
+1-Year Plan: Launch 3 apps, $1M ARR
+Rocks: 4/6 on track (Q1 2026)
+  Off track: Hire VP Sales, Partner Program
+Scorecard: Revenue on track, NPS off track 3 weeks running
+Open Issues: 8 total — top 3: Sales pipeline, Onboarding flow, API stability
+
+Reflection
+━━━━━━━━━━
+
+What's working well?
+> Product-market fit is strong. Customer retention is above target...
+
+What's not working?
+> Sales pipeline is too dependent on one channel...
+
+What's missing?
+> We don't have a formal onboarding process for new hires...
+
+What needs to change?
+> We need to hire a dedicated sales lead before Q2...
+
+Themes: hiring, sales-pipeline, onboarding
+Issues identified: "Sales pipeline depends on single channel"
+```
+
+**History mode:**
+
+```
+Clarity Break History
+━━━━━━━━━━━━━━━━━━━━━
+
+2026-02-14  brad  (45 min)  Themes: hiring, product-market-fit
+2026-02-07  brad  (30 min)  Themes: sales-pipeline, hiring
+2026-01-31  brad  (60 min)  Themes: product-market-fit, team-culture
+
+Total: 3 Clarity Breaks
+
+Recurring Themes (2+ appearances)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  hiring: 2 times (Feb 14, Feb 7)
+  product-market-fit: 2 times (Feb 14, Jan 31)
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `data/clarity/` | Clarity Break notes (one file per session, YYYY-MM-DD.md) |
+| `data/vision.md` | V/TO for strategic context (read-only) |
+| `data/rocks/` | Current Rocks for progress context (read-only) |
+| `data/scorecard/weeks/` | Recent scorecard data for trend context (read-only) |
+| `data/issues/open/` | Open issues for awareness context (read-only) |
+| `templates/clarity-break.md` | Template for new Clarity Break files |
+
+---
+
+## ceos-dashboard — State of the Business Summary
+
+A read-only dashboard that aggregates data from all CEOS skills into a single view. Quick pulse check before L10 meetings, weekly reviews, or any time the leadership team needs the big picture.
+
+### When to Use
+
+- "Dashboard" or "show me the dashboard"
+- "State of the business" or "how are we doing?"
+- "Business health" or "pulse check"
+- "Overview" or "what's the state of things?"
+- Before L10 meetings for a pre-meeting snapshot
+
+### What It Shows
+
+| Section | Data Source | Summary |
+|---------|-----------|---------|
+| **V/TO Snapshot** | `data/vision.md` | Core Focus, 10-Year Target, 3-Year Picture, 1-Year Plan |
+| **Rock Status** | `data/rocks/[quarter]/` | Current quarter counts: on track, off track, complete, dropped |
+| **Scorecard Health** | `data/scorecard/weeks/` | This week's metrics: on track vs off track |
+| **Open Issues** | `data/issues/open/` | Count by priority, oldest unresolved |
+| **People Summary** | `data/people/` | Team size, flagged evaluations (privacy-aware — no names) |
+
+### Design Principles
+
+- **Read-only** — Dashboard never modifies any data files
+- **Graceful degradation** — Missing sections show "No data yet — run `ceos-X` to get started"
+- **Cross-skill suggestions** — Each section suggests the relevant skill for taking action
+
+### Example
+
+```
+You: "How are we doing?"
+
+Claude reads all CEOS data sources and shows:
+
+  State of the Business
+  ━━━━━━━━━━━━━━━━━━━━━
+  Date: 2026-02-14
+
+  V/TO — Acme Corp
+    Core Focus: Helping SMBs automate operations — B2B SaaS
+    10-Year Target: $100M ARR
+    1-Year Plan: $8M revenue, launch Product #2
+
+  Rocks — Q1 2026
+    Total: 6 | On Track: 4 | Off Track: 2
+    Off track: Hire VP Sales (daniel), Partner Program (brad)
+
+  Scorecard — W07
+    5 on track | 2 off track
+    Off track: New Customers (daniel)
+
+  Open Issues — 8 total
+    By priority: 2 P1 | 3 P2 | 2 P3 | 1 P4
+    Oldest: Slow customer onboarding (45 days)
+
+  People — 5 team members
+    Right person, right seat: 3 | Below bar: 1 | Wrong seat: 1
+    2 flagged — review with `ceos-people` for details
+
+  ━━━━━━━━━━━━━━━━━━━━━
+  Suggested Actions:
+    • Review off-track Rocks with `ceos-rocks`
+    • Investigate off-track metrics with `ceos-scorecard`
+    • Resolve 2 critical (P1) issues with `ceos-ids`
+```
+
+### Distinction from ceos-clarity
+
+Dashboard is a **quick status check** — factual counts and summaries. Clarity Break (`ceos-clarity`) is a **strategic reflection tool** — includes context plus guided reflection prompts. Use dashboard for meetings; use clarity for dedicated thinking time.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `data/vision.md` | V/TO document (read-only) |
+| `data/rocks/YYYY-QN/` | Rock files for current quarter (read-only) |
+| `data/scorecard/weeks/` | Weekly scorecard entries (read-only) |
+| `data/issues/open/` | Open issues (read-only) |
+| `data/people/` | People evaluations (read-only) |
+| `data/accountability.md` | Accountability chart (read-only) |
+
+---
+
+## ceos-kickoff — EOS Implementation Kickoff
+
+Facilitate the EOS implementation kickoff sequence — Focus Day, Vision Building Day 1, and Vision Building Day 2. These are the foundational sessions where a leadership team first implements EOS.
+
+### When to Use
+
+- "Focus Day" or "run our Focus Day"
+- "Vision Building Day" or "VB Day 1" or "VB Day 2"
+- "Start EOS" or "implement EOS" or "kick off EOS"
+- "First EOS session" or "EOS implementation"
+
+### Key Operations
+
+| Mode | What Happens |
+|------|-------------|
+| **Focus Day** | Introduces EOS tools, drafts V/TO, creates initial Accountability Chart, brainstorms Rocks, previews L10 format |
+| **Vision Building Day 1** | Deep dive into Core Values, Core Focus, 10-Year Target, and Marketing Strategy |
+| **Vision Building Day 2** | Completes V/TO with 3-Year Picture, 1-Year Plan, sets formal Rocks, brainstorms Issues List |
+
+### Kickoff Sequence
+
+```
+Focus Day          →  VB Day 1         →  VB Day 2         →  Regular EOS Rhythm
+(Introduce EOS)       (~30 days later)    (~30 days later)    (L10s, Quarterly, Annual)
+```
+
+### Example: Focus Day
+
+```
+You: "Let's run our Focus Day"
+Claude: Asks for date and attendees
+        → Walks through 7 agenda sections:
+           1. Welcome & EOS Overview
+           2. V/TO Introduction (first pass)
+           3. Accountability Chart Draft
+           4. Initial Rocks Brainstorm
+           5. Scorecard Discussion
+           6. L10 Preview
+           7. Conclude
+        → Shows complete file for approval
+        → Saves to data/meetings/kickoff/focus-day-2026-02-14.md
+        → Suggests: "Use ceos-accountability to formalize the chart"
+```
+
+### Example: Vision Building Day 2
+
+```
+You: "Let's do VB Day 2"
+Claude: Reads prior Focus Day and VB Day 1 files for context
+        → Walks through 5 agenda sections:
+           1. 3-Year Picture
+           2. 1-Year Plan
+           3. Quarterly Rocks Setting
+           4. Issues List Brainstorm
+           5. Conclude
+        → V/TO completion checklist (all 8 sections)
+        → Saves to data/meetings/kickoff/vb-day-2-2026-02-14.md
+        → Suggests: ceos-vto, ceos-rocks, ceos-ids, ceos-scorecard, ceos-accountability
+```
+
+### Files Used
+
+| Path | Purpose |
+|------|---------|
+| `data/meetings/kickoff/` | Saved kickoff session files (focus-day-*.md, vb-day-1-*.md, vb-day-2-*.md) |
+| `data/vision.md` | V/TO for context checking (read-only) |
+| `data/accountability.md` | Accountability Chart for context (read-only) |
+| `data/rocks/` | Existing Rocks for context (read-only) |
+| `data/scorecard/` | Existing scorecard for context (read-only) |
+| `data/issues/open/` | Existing issues for context (read-only) |
+| `templates/focus-day.md` | Focus Day session template |
+| `templates/vb-day-1.md` | Vision Building Day 1 template |
+| `templates/vb-day-2.md` | Vision Building Day 2 template |
+
+---
+
 ## Cross-Skill Workflows
 
-The 5 skills are designed to work together through the natural EOS cadence. Here are common multi-skill workflows:
+The skills are designed to work together through the natural EOS cadence. Here are common multi-skill workflows:
 
 ### Weekly L10 → Scorecard + Rocks + IDS
 
@@ -449,4 +1311,31 @@ The 5 skills are designed to work together through the natural EOS cadence. Here
 3. ceos-ids investigates root cause
 4. Solution To-Dos assigned to metric owner
 5. Future scorecards show whether the fix worked
+```
+
+### People Evaluation → Quarterly Conversation
+
+```
+1. ceos-people evaluates a team member's Core Values and GWC
+2. Quarterly conversation (ceos-quarterly) references those ratings
+3. If conversation reveals different ratings, ceos-people is updated
+4. Below-bar situations create Issues via ceos-ids
+```
+
+### Organizational Checkup → Annual Planning
+
+```
+1. ceos-checkup assesses all Six Key Components (20 questions)
+2. Low-scoring components surface as IDS priorities
+3. ceos-annual references checkup trends during Section 4 (Org Checkup)
+4. Year-over-year comparison shows whether the team is improving
+```
+
+### Delegate and Elevate → Quarterly Planning
+
+```
+1. ceos-delegate audits a leader's tasks into 4 quadrants
+2. Q3/Q4 tasks identify what to delegate before next quarter
+3. ceos-quarterly-planning considers delegation capacity when setting Rocks
+4. Delegation plans inform hiring decisions and role changes
 ```

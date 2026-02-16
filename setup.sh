@@ -291,7 +291,17 @@ init() {
     mkdir -p "$CEOS_ROOT/data/scorecard/weeks"
     mkdir -p "$CEOS_ROOT/data/issues/open"
     mkdir -p "$CEOS_ROOT/data/issues/solved"
+    mkdir -p "$CEOS_ROOT/data/todos"
     mkdir -p "$CEOS_ROOT/data/meetings/l10"
+    mkdir -p "$CEOS_ROOT/data/meetings/kickoff"
+    mkdir -p "$CEOS_ROOT/data/processes"
+    mkdir -p "$CEOS_ROOT/data/people"
+    mkdir -p "$CEOS_ROOT/data/conversations"
+    mkdir -p "$CEOS_ROOT/data/annual"
+    mkdir -p "$CEOS_ROOT/data/quarterly"
+    mkdir -p "$CEOS_ROOT/data/checkups"
+    mkdir -p "$CEOS_ROOT/data/delegate"
+    mkdir -p "$CEOS_ROOT/data/clarity"
 
     # ── Copy and substitute templates ──
 
