@@ -4,6 +4,7 @@
 # Session state (per-worktree, not shared)
 .claude-session/
 .claude-ticket
+.goodtogo/
 
 # Personal user config
 .ceos-user.yaml
