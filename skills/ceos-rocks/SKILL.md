@@ -114,7 +114,7 @@ For each Rock, collect:
 - **3-7 Rocks per person.** If someone has fewer than 3, ask if they should own more. If more than 7, flag: "Too many Rocks for [person]. EOS recommends 3-7. Which ones are the real priorities?"
 - **Alignment check.** Does each Rock connect to a 1-Year Plan goal? Flag any that don't.
 - **Due date.** Set to the last day of the quarter.
-- **Seat alignment.** Cross-reference Rock owners against `data/accountability.md`. Flag if a Rock's subject area doesn't match the owner's seat responsibilities.
+- **Seat alignment.** Cross-reference Rock owners against `data/accountability.md`. Flag mismatches if a Rock's subject area doesn't match the owner's seat responsibilities, for example: "This Rock falls under the [Seat] responsibilities. Should [Seat Owner] own it instead?"
 
 #### Step 5: Generate the ID
 

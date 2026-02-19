@@ -79,7 +79,7 @@ For each new metric, collect:
 - **One owner per metric.** Not shared.
 - **Measurable.** Must be a specific number, not subjective.
 - **Prefer leading indicators.** Activity metrics (calls made, demos scheduled) predict results better than lagging metrics (revenue).
-- **Seat alignment.** Cross-reference metric owners against `data/accountability.md`. Each metric should map to a seat's responsibilities — if a metric doesn't fit any seat, it may indicate a gap in the Accountability Chart.
+- **Seat alignment.** Cross-reference metric owners against `data/accountability.md`. Each metric should map to a seat's responsibilities. Flag mismatches, e.g., "This metric seems to fall under [Seat] responsibilities. Should [Seat Owner] own it?". If a metric doesn't fit any seat, it may indicate a gap in the Accountability Chart.
 
 #### Step 4: Update the File
 
