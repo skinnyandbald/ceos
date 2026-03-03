@@ -50,6 +50,12 @@ Usage:
   ./setup.sh init         Install skills + guided company setup
   ./setup.sh init --force Install skills + recreate data/ from scratch
   ./setup.sh --uninstall  Remove skill symlinks (data untouched)
+  ./setup.sh validate [path] [--fix]
+                        Check data/ for missing directories and frontmatter issues.
+                        If path is given, use it as the CEOS data root.
+                        Otherwise, search upward from CWD for a .ceos marker.
+  ./setup.sh validate --fix
+                        Same as validate, but creates missing directories.
   ./setup.sh --help       Show this help
 
 What each mode does:
@@ -62,6 +68,19 @@ What each mode does:
 
   --uninstall  Removes the skill symlinks. Your data in data/ is not
                touched — you can re-install any time with ./setup.sh.
+
+  validate     Checks that all required data/ directories exist, required
+               files (vision.md, accountability.md, scorecard/metrics.md)
+               are present, and .md files have required frontmatter fields.
+               Searches upward from CWD for a .ceos marker to find data.
+               Pass a path to specify the CEOS root explicitly:
+                 ./setup.sh validate /path/to/eos
+               Exits 0 if clean, 1 if any issues found.
+
+  validate --fix
+               Same as validate, but also creates any missing directories.
+               Does not create missing files or fix frontmatter (those
+               require human input).
 HELP
 }
 
@@ -296,6 +315,7 @@ init() {
     mkdir -p "$CEOS_ROOT/data/meetings/kickoff"
     mkdir -p "$CEOS_ROOT/data/processes"
     mkdir -p "$CEOS_ROOT/data/people"
+    mkdir -p "$CEOS_ROOT/data/people/alumni"
     mkdir -p "$CEOS_ROOT/data/conversations"
     mkdir -p "$CEOS_ROOT/data/annual"
     mkdir -p "$CEOS_ROOT/data/quarterly"
@@ -342,6 +362,249 @@ init() {
 }
 
 # ─────────────────────────────────────────────────
+# Validate data/ structure and frontmatter
+# ─────────────────────────────────────────────────
+
+validate() {
+    local fix=false
+    local root=""
+
+    # Parse arguments: validate [--fix] [path]
+    for arg in "$@"; do
+        if [[ "$arg" == "--fix" ]]; then
+            fix=true
+        elif [[ -z "$root" ]]; then
+            root="$arg"
+        fi
+    done
+
+    # If no path given, search upward from CWD for .ceos marker
+    if [[ -z "$root" ]]; then
+        local search_dir="$PWD"
+        while [[ "$search_dir" != "/" ]]; do
+            if [[ -f "$search_dir/.ceos" ]]; then
+                root="$search_dir"
+                break
+            fi
+            search_dir="$(dirname "$search_dir")"
+        done
+    fi
+
+    # Fall back to script directory if nothing found
+    if [[ -z "$root" ]]; then
+        root="$CEOS_ROOT"
+    fi
+
+    echo "Data root: $root"
+    echo ""
+
+    if [[ ! -d "$root/data" ]]; then
+        echo "Error: data/ directory not found at $root/data"
+        echo "Run ./setup.sh init to create it."
+        exit 1
+    fi
+
+    local issues=0
+    local dirs_missing=0
+    local fm_warnings=0
+
+    echo "CEOS Validate"
+    echo "─────────────"
+    echo ""
+
+    # ── Required directories ──
+
+    local required_dirs=(
+        "data/"
+        "data/rocks/"
+        "data/scorecard/"
+        "data/scorecard/weeks/"
+        "data/issues/open/"
+        "data/issues/solved/"
+        "data/todos/"
+        "data/meetings/l10/"
+        "data/meetings/kickoff/"
+        "data/processes/"
+        "data/people/"
+        "data/people/alumni/"
+        "data/conversations/"
+        "data/annual/"
+        "data/quarterly/"
+        "data/checkups/"
+        "data/delegate/"
+        "data/clarity/"
+    )
+
+    echo "Checking directories..."
+
+    for dir in "${required_dirs[@]}"; do
+        local full="$root/$dir"
+        if [[ -d "$full" ]]; then
+            echo "  [ok] $dir"
+        else
+            if [[ "$fix" == true ]]; then
+                mkdir -p "$full"
+                echo "  [fixed] $dir (created)"
+                dirs_missing=$((dirs_missing + 1))
+            else
+                echo "  [MISSING] $dir"
+                dirs_missing=$((dirs_missing + 1))
+                issues=$((issues + 1))
+            fi
+        fi
+    done
+
+    echo ""
+
+    # ── Required files ──
+
+    local required_files=(
+        "data/vision.md"
+        "data/accountability.md"
+        "data/scorecard/metrics.md"
+    )
+
+    echo "Checking required files..."
+
+    for f in "${required_files[@]}"; do
+        local full="$root/$f"
+        if [[ -f "$full" ]]; then
+            echo "  [ok] $f"
+        else
+            echo "  [MISSING] $f"
+            issues=$((issues + 1))
+        fi
+    done
+
+    echo ""
+
+    # ── Frontmatter checks ──
+
+    echo "Checking frontmatter..."
+
+    # Helper: check a file for required fields, print result
+    # Usage: check_frontmatter <relative_path> <field1> [field2 ...]
+    check_frontmatter() {
+        local rel="$1"
+        shift
+        local fields=("$@")
+        local full="$root/$rel"
+        local missing_fields=()
+
+        for field in "${fields[@]}"; do
+            # grep for "field:" at the start of any line (frontmatter convention)
+            if ! grep -q "^${field}:" "$full" 2>/dev/null; then
+                missing_fields+=("$field")
+            fi
+        done
+
+        local field_list
+        field_list="$(printf '%s, ' "${fields[@]}")"
+        field_list="${field_list%, }"
+
+        if [[ ${#missing_fields[@]} -eq 0 ]]; then
+            echo "  [ok] $rel ($field_list)"
+        else
+            local missing_list
+            missing_list="$(printf '%s, ' "${missing_fields[@]}")"
+            missing_list="${missing_list%, }"
+            echo "  [WARN] $rel: missing $missing_list"
+            fm_warnings=$((fm_warnings + 1))
+            issues=$((issues + 1))
+        fi
+    }
+
+    # issues/open/*.md
+    if [[ -d "$root/data/issues/open" ]]; then
+        local found_issues=false
+        for f in "$root/data/issues/open/"*.md; do
+            [[ -f "$f" ]] || continue
+            found_issues=true
+            local rel="data/issues/open/$(basename "$f")"
+            check_frontmatter "$rel" "priority" "category" "ids_stage"
+        done
+        if [[ "$found_issues" == false ]]; then
+            echo "  [skip] data/issues/open/ (no .md files)"
+        fi
+    fi
+
+    # todos/*.md
+    if [[ -d "$root/data/todos" ]]; then
+        local found_todos=false
+        for f in "$root/data/todos/"*.md; do
+            [[ -f "$f" ]] || continue
+            found_todos=true
+            local rel="data/todos/$(basename "$f")"
+            check_frontmatter "$rel" "status" "owner" "due"
+        done
+        if [[ "$found_todos" == false ]]; then
+            echo "  [skip] data/todos/ (no .md files)"
+        fi
+    fi
+
+    # rocks/**/*.md
+    if [[ -d "$root/data/rocks" ]]; then
+        local found_rocks=false
+        for f in "$root/data/rocks/"**/*.md; do
+            [[ -f "$f" ]] || continue
+            found_rocks=true
+            # Build relative path
+            local rel="${f#"$root/"}"
+            check_frontmatter "$rel" "status" "owner" "quarter"
+        done
+        if [[ "$found_rocks" == false ]]; then
+            echo "  [skip] data/rocks/ (no .md files)"
+        fi
+    fi
+
+    # people/*.md (not alumni/)
+    if [[ -d "$root/data/people" ]]; then
+        local found_people=false
+        for f in "$root/data/people/"*.md; do
+            [[ -f "$f" ]] || continue
+            found_people=true
+            local rel="data/people/$(basename "$f")"
+            check_frontmatter "$rel" "name" "status" "core_values" "gwc"
+        done
+        if [[ "$found_people" == false ]]; then
+            echo "  [skip] data/people/ (no .md files)"
+        fi
+    fi
+
+    # processes/*.md
+    if [[ -d "$root/data/processes" ]]; then
+        local found_processes=false
+        for f in "$root/data/processes/"*.md; do
+            [[ -f "$f" ]] || continue
+            found_processes=true
+            local rel="data/processes/$(basename "$f")"
+            check_frontmatter "$rel" "status" "owner" "fba_score"
+        done
+        if [[ "$found_processes" == false ]]; then
+            echo "  [skip] data/processes/ (no .md files)"
+        fi
+    fi
+
+    echo ""
+
+    # ── Summary ──
+
+    if [[ "$fix" == true ]]; then
+        echo "Summary: $issues issues found ($dirs_missing directories created, $fm_warnings frontmatter warnings)"
+    else
+        echo "Summary: $issues issues found ($dirs_missing directories missing, $fm_warnings frontmatter warnings)"
+    fi
+
+    if [[ $issues -gt 0 ]]; then
+        if [[ "$fix" != true ]] && [[ $dirs_missing -gt 0 ]]; then
+            echo ""
+            echo "Tip: run ./setup.sh validate --fix to create missing directories."
+        fi
+        exit 1
+    fi
+}
+
+# ─────────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────────
 
@@ -354,6 +617,10 @@ case "${1:-}" in
         ;;
     init)
         init "${2:-}"
+        ;;
+    validate)
+        shift
+        validate "$@"
         ;;
     "")
         install_skills
