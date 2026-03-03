@@ -1,0 +1,23 @@
+{
+  "name": "ceos",
+  "version": "1.0.0",
+  "description": "Run EOS with AI. 16 skills for Vision, Rocks, Scorecard, L10 Meetings, IDS, People Analyzer, and more.",
+  "author": {
+    "name": "Brad Feld",
+    "url": "https://github.com/bradfeld"
+  },
+  "repository": "https://github.com/bradfeld/ceos",
+  "license": "MIT",
+  "keywords": [
+    "eos",
+    "entrepreneurial-operating-system",
+    "leadership",
+    "team-management",
+    "rocks",
+    "scorecard",
+    "l10",
+    "vision",
+    "accountability",
+    "quarterly-planning"
+  ]
+}
